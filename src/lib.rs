@@ -316,7 +316,12 @@ impl AsyncRead for SerialStream {
         buf: &mut ReadBuf<'_>,
     ) -> Poll<IoResult<()>> {
         let mut self_ = self;
-        Pin::new(&mut self_.inner).poll_read(cx, buf)
+        match Pin::new(&mut self_.inner).poll_read(cx, buf) {
+            Poll::Ready(Err(e)) if matches!(e.kind(), std::io::ErrorKind::UnexpectedEof) => {
+                Poll::Pending
+            }
+            poll => poll,
+        }
     }
 }
 
